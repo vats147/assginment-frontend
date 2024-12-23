@@ -12,7 +12,7 @@ export default function Dashboard() {
       try {
         const token = localStorage.getItem('token')
         const tenantId = localStorage.getItem('tenantId')
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/school/summary`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/summary`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-Tenant-ID': tenantId,

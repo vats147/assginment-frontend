@@ -2,48 +2,53 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import Layout from '../../../components/Layout'
-import ProtectedRoute from '../../../components/ProtectedRoute'
+import Layout from '../../../../components/Layout'
+import ProtectedRoute from '../../../../components/ProtectedRoute'
 
-export default function Attendance() {
+export default function EditAttendance() {
   const { classId } = useParams()
   const [students, setStudents] = useState([])
+  const [attendance, setAttendance] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [attendance, setAttendance] = useState({})
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchAttendance = async () => {
       try {
         const token = localStorage.getItem('token')
         const tenantId = localStorage.getItem('tenantId')
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/attendance/${classId}`, {
+        const response = await fetch(`http://localhost:3002/api/schools/attendance/${classId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-Tenant-ID': tenantId,
           },
         })
-        if (!response.ok) {
-          throw new Error('Failed to fetch students')
-        }
-        const data = await response.json()
-        setStudents(data.students)
 
-        // Initialize the attendance state for each student (default to absent)
-        const initialAttendance = data.students.reduce((acc, student) => {
-          acc[student._id] = false; // Assuming default as 'Absent'
-          return acc;
-        }, {});
-        setAttendance(initialAttendance)
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance')
+        }
+
+        const data = await response.json()
+        console.log(data.attendance)
+        const attendanceRecords = data.attendance[0].records.reduce((acc, record) => {
+          acc[record.studentId] = record.status === 'Present'
+          return acc
+        }, {})
+
+        setStudents([
+          { _id: '6768fefa911e52727cd0c86e', name: 'Vatsal' },
+          { _id: '6768ff08911e52727cd0c879', name: 'asd' },
+        ])
+        setAttendance(attendanceRecords)
         setLoading(false)
       } catch (error) {
-        console.error('Error fetching students:', error)
+        console.error('Error fetching attendance:', error)
         setError(error.message)
         setLoading(false)
       }
     }
 
-    fetchStudents()
+    fetchAttendance()
   }, [classId])
 
   const handleAttendanceChange = (studentId, isPresent) => {
@@ -58,23 +63,23 @@ export default function Attendance() {
     try {
       const token = localStorage.getItem('token')
       const tenantId = localStorage.getItem('tenantId')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/attendance/${classId}`, {
-        method: 'POST',
+      const response = await fetch(`http://localhost:3002/api/schools/attendance/${classId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
           'X-Tenant-ID': tenantId,
         },
-        body: JSON.stringify({ attendance })
+        body: JSON.stringify({ attendance }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit attendance')
+        throw new Error('Failed to update attendance')
       }
 
-      alert('Attendance submitted successfully')
+      alert('Attendance updated successfully')
     } catch (error) {
-      console.error('Error submitting attendance:', error)
+      console.error('Error updating attendance:', error)
       setError(error.message)
     }
   }
@@ -82,9 +87,9 @@ export default function Attendance() {
   return (
     <ProtectedRoute>
       <Layout>
-        <h1 className="text-3xl font-bold mb-6">Attendance for Class {classId}</h1>
+        <h1 className="text-3xl font-bold mb-6">Edit Attendance for Class {classId}</h1>
         {loading ? (
-          <p>Loading students...</p>
+          <p>Loading attendance...</p>
         ) : error ? (
           <p className="text-red-500">{error}</p>
         ) : (
@@ -94,7 +99,6 @@ export default function Attendance() {
                 <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Name</th>
                   <th className="py-3 px-6 text-left">Present</th>
-                  <th className="py-3 px-6 text-left">Absent</th>
                 </tr>
               </thead>
               <tbody className="text-gray-600 text-sm font-light">
@@ -108,19 +112,12 @@ export default function Attendance() {
                         onChange={(e) => handleAttendanceChange(student._id, e.target.checked)}
                       />
                     </td>
-                    <td className="py-3 px-6 text-left">
-                      <input
-                        type="checkbox"
-                        checked={!attendance[student._id]}
-                        onChange={(e) => handleAttendanceChange(student._id, !e.target.checked)}
-                      />
-                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-              Submit Attendance
+              Update Attendance
             </button>
           </form>
         )}

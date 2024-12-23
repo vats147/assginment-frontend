@@ -18,14 +18,14 @@ export default function AddClass() {
     try {
       const token = localStorage.getItem('token')
       const tenantId = localStorage.getItem('tenantId')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/classes`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/classes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
           'X-Tenant-ID': tenantId,
         },
-        body: JSON.stringify({ name, teacher }),
+        body: JSON.stringify({ name, teacherId:teacher }),
       })
 
       if (!response.ok) {

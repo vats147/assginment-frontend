@@ -15,7 +15,7 @@ export default function Classes() {
       try {
         const token = localStorage.getItem('token')
         const tenantId = localStorage.getItem('tenantId')
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/classes`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/classes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-Tenant-ID': tenantId,
@@ -24,11 +24,31 @@ export default function Classes() {
         if (!response.ok) {
           throw new Error('Failed to fetch classes')
         }
-        const data = await response.json()
-        setClasses(data)
+        const classesData = await response.json()
+
+        // Fetch attendance for each class and attach attendanceExists flag
+        const updatedClasses = await Promise.all(
+          classesData.classes.map(async (classItem) => {
+            const attendanceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/attendance/${classItem._id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Tenant-ID': tenantId,
+              },
+            })
+
+            if (attendanceResponse.ok) {
+              const attendanceData = await attendanceResponse.json()
+              return { ...classItem, attendanceExists: attendanceData.attendance.length > 0 }
+            } else {
+              return { ...classItem, attendanceExists: false }
+            }
+          })
+        )
+
+        setClasses(updatedClasses)
         setLoading(false)
       } catch (error) {
-        console.error('Error fetching classes:', error)
+        console.error('Error fetching classes or attendance:', error)
         setError(error.message)
         setLoading(false)
       }
@@ -55,21 +75,32 @@ export default function Classes() {
             <thead>
               <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Name</th>
-                <th className="py-3 px-6 text-left">Teacher</th>
-                <th className="py-3 px-6 text-left">Students</th>
+            
                 <th className="py-3 px-6 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
               {classes.map((classItem) => (
-                <tr key={classItem.id} className="border-b border-gray-200 hover:bg-gray-100">
+                <tr key={classItem._id} className="border-b border-gray-200 hover:bg-gray-100">
                   <td className="py-3 px-6 text-left whitespace-nowrap">{classItem.name}</td>
-                  <td className="py-3 px-6 text-left">{classItem.teacher}</td>
-                  <td className="py-3 px-6 text-left">{classItem.studentCount}</td>
+                  
                   <td className="py-3 px-6 text-left">
-                    <Link href={`/attendance/${classItem.id}`} className="text-blue-500 hover:underline">
-                      Manage Attendance
-                    </Link>
+                    <div className="flex space-x-4">
+                      {classItem.attendanceExists ? (
+                        <>
+                          <Link href={`/attendance/${classItem._id}/edit`} className="text-green-500 hover:underline">
+                            Edit Attendance
+                          </Link>
+                          <Link href={`/attendance/${classItem._id}/view`} className="text-purple-500 hover:underline">
+                            View Attendance
+                          </Link>
+                        </>
+                      ) : (
+                        <Link href={`/attendance/${classItem._id}`} className="text-blue-500 hover:underline">
+                          Add Attendance
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -80,4 +111,3 @@ export default function Classes() {
     </ProtectedRoute>
   )
 }
-

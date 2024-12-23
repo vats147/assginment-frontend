@@ -15,7 +15,7 @@ export default function Students() {
       try {
         const token = localStorage.getItem('token')
         const tenantId = localStorage.getItem('tenantId')
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/students`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/schools/students`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-Tenant-ID': tenantId,
@@ -24,9 +24,10 @@ export default function Students() {
         if (!response.ok) {
           throw new Error('Failed to fetch students')
         }
-        const data = await response.json()
-        setStudents(data)
+        const data = await response.json();
+        setStudents(data.students)
         setLoading(false)
+        
       } catch (error) {
         console.error('Error fetching students:', error)
         setError(error.message)
@@ -60,7 +61,7 @@ export default function Students() {
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
-              {students.map((student) => (
+              {students?.map((student) => (
                 <tr key={student.id} className="border-b border-gray-200 hover:bg-gray-100">
                   <td className="py-3 px-6 text-left whitespace-nowrap">{student.name}</td>
                   <td className="py-3 px-6 text-left">{student.email}</td>
